@@ -20,13 +20,14 @@
   <div class="result" id="result"></div>
 
   <script>
-    const MODEL_PATH = "model/model.json";
+    // Aangepast pad naar jouw model in de submap tm-web/model
+    const MODEL_PATH = "tm-web/model/model.json";
     let model = null;
     let LABELS = [];
 
     async function loadModel() {
       // laad metadata
-      const metadata = await fetch("model/metadata.json").then(r=>r.json());
+      const metadata = await fetch("tm-web/model/metadata.json").then(r=>r.json());
       LABELS = metadata.labels || metadata.class_names || [];
       model = await tf.loadGraphModel(MODEL_PATH);
       document.getElementById("predictBtn").disabled = false;
@@ -48,7 +49,7 @@
       if(!imgEl.src) return alert("Kies eerst een afbeelding");
 
       let tensor = tf.browser.fromPixels(imgEl)
-        .resizeBilinear([224,224])
+        .resizeBilinear([224,224]) // pas aan als jouw model een andere input size heeft
         .toFloat()
         .div(127.5).sub(1)
         .expandDims();
@@ -67,3 +68,4 @@
   </script>
 </body>
 </html>
+
