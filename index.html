@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teachable Machine Classifier</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 40px auto; padding: 12px; }
+    img { max-width: 400px; margin-top: 12px; border-radius:8px; }
+    .result { margin-top:12px; }
+  </style>
+</head>
+<body>
+  <h1>Upload een foto</h1>
+
+  <input type="file" id="fileInput" accept="image/*" />
+  <button id="predictBtn" disabled>Classificeer</button>
+
+  <img id="preview" style="display:none;" />
+  <div class="result" id="result"></div>
+
+  <script>
+    const MODEL_PATH = "model/model.json";
+    let model = null;
+    let LABELS = [];
+
+    async function loadModel() {
+      // laad metadata
+      const metadata = await fetch("model/metadata.json").then(r=>r.json());
+      LABELS = metadata.labels || metadata.class_names || [];
+      model = await tf.loadGraphModel(MODEL_PATH);
+      document.getElementById("predictBtn").disabled = false;
+      console.log("Model geladen");
+    }
+
+    loadModel();
+
+    document.getElementById("fileInput").addEventListener("change", (ev)=>{
+      const file = ev.target.files[0];
+      if(!file) return;
+      const img = document.getElementById("preview");
+      img.src = URL.createObjectURL(file);
+      img.style.display = "block";
+    });
+
+    document.getElementById("predictBtn").addEventListener("click", async ()=>{
+      const imgEl = document.getElementById("preview");
+      if(!imgEl.src) return alert("Kies eerst een afbeelding");
+
+      let tensor = tf.browser.fromPixels(imgEl)
+        .resizeBilinear([224,224])
+        .toFloat()
+        .div(127.5).sub(1)
+        .expandDims();
+
+      let predictions = await model.predict(tensor).data();
+
+      let output = "";
+      predictions.forEach((p,i)=>{
+        const label = LABELS[i] ?? `Class ${i}`;
+        output += `${label}: ${(p*100).toFixed(2)}%<br>`;
+      });
+
+      document.getElementById("result").innerHTML = output;
+      tf.dispose(tensor);
+    });
+  </script>
+</body>
+</html>
